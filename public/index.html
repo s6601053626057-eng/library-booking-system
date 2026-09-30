@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Room Booking System | ระบบจองห้องห้องสมุดมหาวิทยาลัย</title>
+  
+  <!-- Google Fonts: Kanit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Chart.js for Admin Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top Quick Demo Switcher Bar -->
+  <div class="demo-role-bar">
+    <div>
+      <i class="fas fa-university"></i> <strong>Central University Library</strong> &bull; ระบบทดสอบการใช้งานจริง (Role-Based Demo)
+    </div>
+    <div>
+      เข้าสู่ระบบด่วน: 
+      <a onclick="App.quickLoginAdmin()"><i class="fas fa-user-shield"></i> ผู้ดูแลระบบ (Admin)</a>
+    </div>
+  </div>
+
+  <!-- Header / Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo-brand" data-target="homeView">
+        <div class="logo-icon">
+          <i class="fas fa-book-reader"></i>
+        </div>
+        <div class="logo-text">
+          <h1>Library Room Booking</h1>
+          <span>สำนักวิทยบริการและห้องสมุดมหาวิทยาลัย</span>
+        </div>
+      </div>
+
+      <ul class="nav-links">
+        <li><a class="nav-link active" data-target="homeView"><i class="fas fa-home"></i> หน้าแรก</a></li>
+        <li><a class="nav-link" data-target="roomsView"><i class="fas fa-door-open"></i> ค้นหาห้อง</a></li>
+        <li><a class="nav-link" data-target="myBookingsView"><i class="fas fa-calendar-check"></i> การจองของฉัน</a></li>
+        <li id="navAdminLink" style="display: none;"><a class="nav-link" data-target="adminView"><i class="fas fa-chart-pie"></i> จัดการระบบ (Admin)</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <!-- Notification Bell -->
+        <div style="position: relative;">
+          <button class="notification-btn" id="notifBellBtn" title="การแจ้งเตือน">
+            <i class="far fa-bell"></i>
+            <span class="badge-count" id="notifBadgeCount" style="display: none;">0</span>
+          </button>
+          
+          <div class="notification-dropdown" id="notificationDropdown">
+            <div class="notification-header">
+              <span><i class="fas fa-bell"></i> การแจ้งเตือน</span>
+              <span style="font-size: 0.75rem; color: var(--primary); cursor: pointer;" onclick="App.refreshNotifications()">รีเฟรช</span>
+            </div>
+            <div class="notification-list" id="notificationList">
+              <div style="padding: 1.5rem; text-align: center; color: #94a3b8;">กำลังโหลด...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guest State -->
+        <div id="navGuestActions" style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-outline btn-sm" onclick="App.openModal('loginModal')">
+            <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="App.openModal('registerModal')">
+            ลงทะเบียน
+          </button>
+        </div>
+
+        <!-- Logged-in State -->
+        <div id="navUserActions" style="display: none; align-items: center; gap: 0.75rem;">
+          <div class="user-profile-btn" onclick="App.switchView('myBookingsView')">
+            <div class="user-avatar" id="navUserAvatar">U</div>
+            <span id="navUserName" style="font-weight: 600;">User</span>
+            <span class="role-badge student" id="navUserRole">STUDENT</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="App.logout()" title="ออกจากระบบ">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ====================================================================
+       MAIN CONTENT CONTAINER
+       ==================================================================== -->
+  <main class="main-content">
+
+    <!-- VIEW 1: HOME VIEW -->
+    <section class="view-section active" id="homeView">
+      <div class="hero-card">
+        <div class="hero-text">
+          <div class="hero-badge">
+            <i class="fas fa-sparkles"></i> ระบบจองพื้นที่การเรียนรู้ออนไลน์ 24 ชั่วโมง
+          </div>
+          <h2 class="hero-title">Book your study space easily and quickly.</h2>
+          <p class="hero-subtitle">
+            ค้นหาห้องศึกษาค้นคว้ากลุ่ม ห้องประชุม ห้องฝึกซ้อมการนำเสนอ ตรวจสอบสถานะห้องว่างแบบเรียลไทม์ และรับ QR Code สำหรับสแกนเข้าห้องได้ทันทีโดยไม่ต้องติดต่อเจ้าหน้าที่
+          </p>
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button class="btn btn-light btn-lg" style="background:#fff; color:var(--primary); font-weight:700;" onclick="App.switchView('roomsView')">
+              <i class="fas fa-calendar-plus"></i> จองห้องทันที (Book a Room)
+            </button>
+            <button class="btn btn-outline btn-lg" style="border-color:#fff; color:#fff;" onclick="App.switchView('myBookingsView')">
+              <i class="fas fa-clipboard-list"></i> ตรวจสอบการจองของฉัน
+            </button>
+          </div>
+
+          <div class="hero-stats-row">
+            <div class="hero-stat-box">
+              <div class="hero-stat-val" id="homeTotalRooms">6</div>
+              <div class="hero-stat-lbl">ห้องทั้งหมดในระบบ</div>
+            </div>
+            <div class="hero-stat-box">
+              <div class="hero-stat-val" style="color: #34d399;" id="homeAvailableRooms">5</div>
+              <div class="hero-stat-lbl">ห้องว่างพร้อมใช้งาน (🟢)</div>
+            </div>
+            <div class="hero-stat-box">
+              <div class="hero-stat-val">08:00 - 21:00</div>
+              <div class="hero-stat-lbl">เวลาเปิดให้บริการห้องสมุด</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4-Steps Guide -->
+      <div class="steps-section">
+        <div class="section-header">
+          <h3 class="section-title">วิธีการจองห้องใน 4 ขั้นตอนง่ายๆ</h3>
+          <p class="section-desc">ขั้นตอนสะดวกรวดเร็ว ลดเวลา และป้องกันการจองซ้ำซ้อน</p>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card">
+            <span class="step-number">1</span>
+            <div class="step-icon"><i class="fas fa-search"></i></div>
+            <h4 class="step-title">ค้นหาและเลือกห้อง</h4>
+            <p class="step-desc">เลือกห้องตามจำนวนที่นั่ง ชั้น หรืออุปกรณ์ เช่น Smart TV, โปรเจกเตอร์, หรือคอมพิวเตอร์</p>
+          </div>
+
+          <div class="step-card">
+            <span class="step-number">2</span>
+            <div class="step-icon"><i class="fas fa-calendar-alt"></i></div>
+            <h4 class="step-title">กำหนดวันและเวลา</h4>
+            <p class="step-desc">เลือกวันที่และตรวจสอบแถบเวลาว่าง ระบบจะป้องกันไม่ให้จองเวลาที่มีผู้ใช้งานอยู่แล้ว</p>
+          </div>
+
+          <div class="step-card">
+            <span class="step-number">3</span>
+            <div class="step-icon"><i class="fas fa-file-signature"></i></div>
+            <h4 class="step-title">ยืนยันข้อมูลการจอง</h4>
+            <p class="step-desc">ระบุจำนวนผู้ใช้งาน วัตถุประสงค์ และยอมรับระเบียบการใช้ห้องสมุดเพื่อความเรียบร้อย</p>
+          </div>
+
+          <div class="step-card">
+            <span class="step-number">4</span>
+            <div class="step-icon"><i class="fas fa-qrcode"></i></div>
+            <h4 class="step-title">รับ QR Code ทันที</h4>
+            <p class="step-desc">รับ Booking ID และ QR Code สำหรับสแกนเช็คอินเข้าห้องที่หน้าประตูได้ทันที</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Featured Rooms -->
+      <div style="margin-top: 3.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+          <div>
+            <h3 class="section-title" style="margin-bottom: 0.25rem;">ห้องศึกษายอดนิยม</h3>
+            <p class="section-desc">ห้องค้นคว้าที่พร้อมให้บริการสำหรับนักศึกษา</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="App.switchView('roomsView')">
+            ดูทั้งหมด <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+
+        <div class="rooms-grid" id="featuredRoomsContainer">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: ROOM LIST & SEARCH VIEW -->
+    <section class="view-section" id="roomsView">
+      <div style="margin-bottom: 1.75rem;">
+        <h2 style="font-size: 1.85rem; font-weight: 700; color: var(--secondary);">ค้นหาและจองห้องศึกษาค้นคว้า</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">เลือกดูห้องตามชั้น ความจุ อุปกรณ์ และสถานะความพร้อมใช้งาน</p>
+      </div>
+
+      <!-- Filter Panel -->
+      <div class="filter-panel">
+        <div class="filter-main-row">
+          <div class="search-input-wrap">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="roomSearchInput" class="form-control" placeholder="ค้นหาชื่อห้อง, รหัสห้อง (เช่น LIB-R101), หรือสถานที่..." />
+          </div>
+
+          <select id="roomFloorFilter" class="filter-select">
+            <option value="all">ทุกชั้น (All Floors)</option>
+            <option value="1">ชั้น 1 (Zone A)</option>
+            <option value="2">ชั้น 2 (Innovation Center)</option>
+            <option value="3">ชั้น 3 (Academic & Silent)</option>
+          </select>
+
+          <select id="roomCapacityFilter" class="filter-select">
+            <option value="all">ทุกขนาดความจุ</option>
+            <option value="4">1 - 4 ที่นั่ง (กลุ่มย่อย)</option>
+            <option value="8">5 - 8 ที่นั่ง (กลุ่มกลาง)</option>
+            <option value="16">9 - 16 ที่นั่ง (กลุ่มใหญ่)</option>
+          </select>
+
+          <select id="roomStatusFilter" class="filter-select">
+            <option value="all">ทุกสถานะ (All Status)</option>
+            <option value="available">🟢 Available (ว่าง)</option>
+            <option value="booked">🔴 Booked (มีผู้จองแล้ว)</option>
+            <option value="pending">🟡 Pending (รอตรวจสอบ)</option>
+            <option value="maintenance">⚫ Maintenance (ปรับปรุง)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; pt-2;">
+          <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+            <i class="fas fa-sliders-h"></i> อุปกรณ์ที่ต้องการ:
+          </span>
+          <div class="equipment-checkboxes">
+            <label class="checkbox-pill">
+              <input type="checkbox" class="filter-equipment-item" value="Projector"> โปรเจกเตอร์
+            </label>
+            <label class="checkbox-pill">
+              <input type="checkbox" class="filter-equipment-item" value="Smart TV"> Smart TV 65"
+            </label>
+            <label class="checkbox-pill">
+              <input type="checkbox" class="filter-equipment-item" value="Whiteboard"> กระดาน Whiteboard
+            </label>
+            <label class="checkbox-pill">
+              <input type="checkbox" class="filter-equipment-item" value="Computer"> คอมพิวเตอร์
+            </label>
+            <label class="checkbox-pill">
+              <input type="checkbox" class="filter-equipment-item" value="Video Conference"> ระบบ Hybrid Meeting
+            </label>
+          </div>
+          <div style="margin-left: auto; font-size: 0.85rem; color: var(--text-muted);" id="roomsResultCount">
+            กำลังโหลด...
+          </div>
+        </div>
+      </div>
+
+      <!-- Rooms Grid -->
+      <div class="rooms-grid" id="roomsGridContainer">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- VIEW 3: MY BOOKINGS VIEW -->
+    <section class="view-section" id="myBookingsView">
+      <div style="margin-bottom: 1.75rem;">
+        <h2 style="font-size: 1.85rem; font-weight: 700; color: var(--secondary);">การจองของฉัน (My Bookings)</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">ตรวจสอบสถานะการจอง บัตรเข้าใช้งานห้อง QR Code และจัดการยกเลิกการจอง</p>
+      </div>
+
+      <div class="tabs-nav">
+        <button class="tab-btn active my-bookings-tab" data-tab="upcoming">
+          <i class="far fa-clock"></i> การจองที่จะมาถึง (Upcoming)
+        </button>
+        <button class="tab-btn my-bookings-tab" data-tab="completed">
+          <i class="fas fa-check-circle"></i> เสร็จสิ้นแล้ว (Completed)
+        </button>
+        <button class="tab-btn my-bookings-tab" data-tab="cancelled">
+          <i class="fas fa-ban"></i> ยกเลิกแล้ว (Cancelled)
+        </button>
+      </div>
+
+      <div id="myBookingsList">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- VIEW 4: ADMIN DASHBOARD & MANAGEMENT VIEW -->
+    <section class="view-section" id="adminView">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.85rem; font-weight: 700; color: var(--secondary);">ผู้ดูแลระบบห้องสมุด (Admin Dashboard)</h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem;">สถิติการใช้งานห้อง จัดการรายการจอง และดูแลข้อมูลห้องสมุด</p>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-primary btn-sm admin-subnav-btn active" data-tab="dashboard">
+            <i class="fas fa-chart-line"></i> แดชบอร์ด & สถิติ
+          </button>
+          <button class="btn btn-outline btn-sm admin-subnav-btn" data-tab="rooms">
+            <i class="fas fa-door-open"></i> จัดการห้อง (Manage Rooms)
+          </button>
+        </div>
+      </div>
+
+      <!-- Admin Tab 1: Dashboard & Analytics -->
+      <div id="adminDashboardTab">
+        <!-- Quick Check-in Scanner Bar -->
+        <div style="background: #fff; border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; border: 1.5px solid #bfdbfe; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.85rem;">
+            <div style="width: 44px; height: 44px; background: #eff6ff; color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+              <i class="fas fa-qrcode"></i>
+            </div>
+            <div>
+              <div style="font-weight: 600; color: var(--secondary);">จุดสแกนเช็คอินหน้าห้อง (QR Check-In Terminal)</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">กรอกหรือสแกน Booking ID เพื่อทำการเช็คอินนักศึกษาเข้าใช้ห้องทันที</div>
+            </div>
+          </div>
+          <form id="adminCheckInForm" style="display: flex; gap: 0.5rem;">
+            <input type="text" id="adminCheckInInput" class="form-control" placeholder="เช่น LIB-20260928-001" style="width: 240px; text-transform: uppercase;" required />
+            <button type="submit" class="btn btn-success btn-sm">
+              <i class="fas fa-check-circle"></i> เช็คอิน
+            </button>
+          </form>
+        </div>
+
+        <!-- KPI Summary Cards -->
+        <div class="admin-stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3 id="adminStatTotalRooms">0</h3>
+              <p>ห้องทั้งหมดในระบบ</p>
+            </div>
+            <div class="stat-icon blue"><i class="fas fa-door-open"></i></div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3 id="adminStatAvailRooms" style="color: var(--status-available);">0</h3>
+              <p>ห้องว่างพร้อมใช้งาน (🟢)</p>
+            </div>
+            <div class="stat-icon green"><i class="fas fa-check"></i></div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3 id="adminStatTodayBookings" style="color: var(--primary);">0</h3>
+              <p>จำนวนการจองวันนี้</p>
+            </div>
+            <div class="stat-icon amber"><i class="fas fa-calendar-day"></i></div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3 id="adminStatPendingBookings" style="color: var(--status-pending);">0</h3>
+              <p>รอการยืนยัน (Pending 🟡)</p>
+            </div>
+            <div class="stat-icon purple"><i class="fas fa-hourglass-half"></i></div>
+          </div>
+        </div>
+
+        <!-- Analytics Charts Grid -->
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h4><i class="fas fa-chart-line"></i> สถิติการจองรายวัน (Daily Bookings Trend)</h4>
+            <div style="height: 250px;">
+              <canvas id="dailyBookingsChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <h4><i class="fas fa-chart-pie"></i> สัดส่วนสถานะห้อง (Room Status)</h4>
+            <div style="height: 250px;">
+              <canvas id="roomStatusChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="chart-card">
+            <h4><i class="fas fa-trophy"></i> ห้องที่ถูกจองมากที่สุด (Most Booked Rooms)</h4>
+            <div style="height: 250px;">
+              <canvas id="mostBookedChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <h4><i class="fas fa-clock"></i> ช่วงเวลาที่มีการใช้งานมากที่สุด (Peak Hours)</h4>
+            <div style="height: 250px;">
+              <canvas id="peakHoursChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Bookings Table -->
+        <div style="margin-top: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--secondary);">
+              <i class="fas fa-list-alt"></i> รายการจองทั้งหมด (Bookings Management)
+            </h3>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="adminBookingsSearch" class="form-control" placeholder="ค้นหาชื่อผู้จอง, รหัส, ห้อง..." style="width: 220px; padding: 0.45rem 0.75rem;" />
+              <select id="adminBookingsStatusFilter" class="filter-select">
+                <option value="all">สถานะทั้งหมด</option>
+                <option value="confirmed">ยืนยันแล้ว</option>
+                <option value="pending">รออนุมัติ</option>
+                <option value="checked_in">เช็คอินแล้ว</option>
+                <option value="cancelled">ยกเลิกแล้ว</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>ผู้จอง (Student)</th>
+                  <th>ห้อง (Room)</th>
+                  <th>วันที่</th>
+                  <th>ช่วงเวลา</th>
+                  <th>สถานะ</th>
+                  <th>การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="adminBookingsTableBody">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Tab 2: Manage Rooms -->
+      <div id="adminRoomsTab" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+          <div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--secondary);">รายการห้องศึกษาค้นคว้า</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">เพิ่ม แก้ไข หรือปิดปรับปรุงห้องสมุด</p>
+          </div>
+          <button class="btn btn-primary" onclick="AdminUI.openAddRoomModal()">
+            <i class="fas fa-plus-circle"></i> เพิ่มห้องใหม่ (Add Room)
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>รูป</th>
+                <th>รหัสห้อง</th>
+                <th>ชื่อห้อง</th>
+                <th>ความจุ</th>
+                <th>ชั้น</th>
+                <th>สถานะ</th>
+                <th>การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="adminRoomsTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ====================================================================
+       MODALS
+       ==================================================================== -->
+
+  <!-- 1. LOGIN MODAL -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบห้องสมุด</h3>
+        <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+      </div>
+      <form id="loginForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">รหัสนักศึกษา หรือ อีเมลมหาวิทยาลัย</label>
+            <input type="text" id="loginUsername" class="form-control" placeholder="เช่น 6601024 หรือ admin@university.ac.th" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">รหัสผ่าน</label>
+            <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required />
+          </div>
+
+          <div style="background: #f8fafc; border-radius: 8px; padding: 0.85rem; font-size: 0.82rem; color: #475569; margin-top: 1rem;">
+            <strong>เข้าสู่ระบบด่วนสำหรับเจ้าหน้าที่ (1-Click Admin):</strong>
+            <div style="margin-top: 0.4rem;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="App.quickLoginAdmin()" style="width: 100%;">
+                🔑 เจ้าหน้าที่ Admin (สำหรับจัดการระบบ)
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>ยกเลิก</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-arrow-right"></i> เข้าสู่ระบบ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. REGISTER MODAL -->
+  <div class="modal-overlay" id="registerModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-user-plus"></i> ลงทะเบียนนักศึกษาใหม่</h3>
+        <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+      </div>
+      <form id="registerForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">รหัสนักศึกษา (Student ID)</label>
+            <input type="text" id="regStudentId" class="form-control" placeholder="เช่น 6601099" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">ชื่อ - นามสกุล</label>
+            <input type="text" id="regName" class="form-control" placeholder="เช่น น.ส. วรรณภา มั่นคง" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">อีเมลมหาวิทยาลัย</label>
+            <input type="email" id="regEmail" class="form-control" placeholder="student@university.ac.th" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">คณะ / สาขาวิชา</label>
+            <input type="text" id="regDepartment" class="form-control" placeholder="เช่น คณะวิศวกรรมศาสตร์" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">เบอร์โทรศัพท์</label>
+            <input type="tel" id="regPhone" class="form-control" placeholder="08X-XXX-XXXX" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">รหัสผ่าน</label>
+            <input type="password" id="regPassword" class="form-control" placeholder="กำหนดรหัสผ่าน" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>ยกเลิก</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> สร้างบัญชี</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. ROOM DETAIL MODAL -->
+  <div class="modal-overlay" id="roomDetailModal">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="detailModalTitle">รายละเอียดห้อง</h3>
+        <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="height: 240px; border-radius: var(--radius-md); overflow: hidden; margin-bottom: 1.25rem;">
+          <img id="detailModalImage" src="" alt="Room detail" style="width: 100%; height: 100%; object-fit: cover;" />
+        </div>
+        <div id="detailModalInfo">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>ปิด</button>
+        <button type="button" class="btn btn-primary" id="detailModalBookBtn">
+          <i class="fas fa-calendar-check"></i> ดำเนินการจองห้องนี้
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. BOOKING MODAL -->
+  <div class="modal-overlay" id="bookingModal">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title"><i class="fas fa-calendar-check"></i> จองห้องศึกษาค้นคว้า</h3>
+          <div id="bookingModalRoomName" style="font-size: 0.85rem; color: var(--primary); font-weight: 600;"></div>
+        </div>
+        <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+      </div>
+      <form id="bookingModalForm">
+        <input type="hidden" id="bookingModalRoomId" />
+        <div class="modal-body">
+          <div style="background: #eff6ff; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="font-size: 0.82rem; color: #1e40af;">ความจุสูงสุด:</span>
+              <strong id="bookingModalRoomCap" style="color: #1e3a8a; margin-left: 0.4rem;">4 ท่าน</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.82rem; color: #1e40af;">ผู้จอง:</span>
+              <strong id="bookingModalUserName" style="color: #1e3a8a; margin-left: 0.4rem;">Somchai</strong>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label"><i class="far fa-calendar-alt"></i> วันที่ต้องการจอง</label>
+              <input type="date" id="bookingModalDate" class="form-control" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><i class="fas fa-user-friends"></i> จำนวนผู้ใช้งาน (คน)</label>
+              <input type="number" id="bookingModalAttendees" class="form-control" min="1" max="16" value="2" required />
+            </div>
+          </div>
+
+          <!-- Visual Slot Matrix -->
+          <div style="margin: 0.75rem 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label class="form-label" style="margin-bottom: 0;">
+                <i class="far fa-clock"></i> ตารางเวลาความพร้อมใช้งานของห้องในวันที่เลือก:
+              </label>
+              <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 0.75rem;">
+                <span><span class="status-dot available" style="display:inline-block;"></span> ว่าง</span>
+                <span><span class="status-dot booked" style="display:inline-block;"></span> มีผู้จองแล้ว</span>
+              </div>
+            </div>
+            <div class="time-slot-grid" id="bookingModalSlotMatrix">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">เวลาเริ่มต้น (Start Time)</label>
+              <select id="bookingModalStartTime" class="form-control">
+                <option value="08:00">08:00</option>
+                <option value="09:00" selected>09:00</option>
+                <option value="10:00">10:00</option>
+                <option value="11:00">11:00</option>
+                <option value="12:00">12:00</option>
+                <option value="13:00">13:00</option>
+                <option value="14:00">14:00</option>
+                <option value="15:00">15:00</option>
+                <option value="16:00">16:00</option>
+                <option value="17:00">17:00</option>
+                <option value="18:00">18:00</option>
+                <option value="19:00">19:00</option>
+                <option value="20:00">20:00</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">เวลาสิ้นสุด (End Time)</label>
+              <select id="bookingModalEndTime" class="form-control">
+                <option value="09:00">09:00</option>
+                <option value="10:00">10:00</option>
+                <option value="11:00" selected>11:00</option>
+                <option value="12:00">12:00</option>
+                <option value="13:00">13:00</option>
+                <option value="14:00">14:00</option>
+                <option value="15:00">15:00</option>
+                <option value="16:00">16:00</option>
+                <option value="17:00">17:00</option>
+                <option value="18:00">18:00</option>
+                <option value="19:00">19:00</option>
+                <option value="20:00">20:00</option>
+                <option value="21:00">21:00</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Conflict Status Banner -->
+          <div id="bookingConflictAlert" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.88rem; margin-bottom: 1rem;">
+            <!-- Populated via JS -->
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">วัตถุประสงค์ในการใช้งาน</label>
+            <input type="text" id="bookingModalPurpose" class="form-control" placeholder="เช่น ติวหนังสือเตรียมสอบวิชา Physics, ประชุมกลุ่มโครงงาน" value="ค้นคว้าและอ่านหนังสือ" />
+          </div>
+
+          <!-- Policy Agreement -->
+          <div style="margin-top: 1rem; padding: 0.75rem; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px;">
+            <label style="display: flex; align-items: flex-start; gap: 0.6rem; cursor: pointer; font-size: 0.88rem;">
+              <input type="checkbox" id="bookingModalAgree" style="margin-top: 0.2rem;" required />
+              <span>ฉันยอมรับระเบียบการใช้ห้องสมุด (I agree to the library room usage policy) และจะสแกน QR Code เช็คอินตรงเวลา</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>ยกเลิก</button>
+          <button type="submit" class="btn btn-primary" id="bookingSubmitBtn">
+            <i class="fas fa-check"></i> ยืนยันการจองห้อง
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. BOOKING SUCCESS CONFIRMATION MODAL -->
+  <div class="modal-overlay" id="bookingSuccessModal">
+    <div class="modal-box" style="text-align: center;">
+      <div class="modal-body" style="padding: 2.25rem 2rem;">
+        <div style="width: 70px; height: 70px; background: #dcfce7; color: var(--status-available); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 1.25rem;">
+          <i class="fas fa-check"></i>
+        </div>
+        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.4rem;">Booking Successful!</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">ระบบได้ทำการบันทึกข้อมูลการจองห้องของท่านเรียบร้อยแล้ว</p>
+
+        <!-- QR Ticket -->
+        <div class="qr-ticket-card">
+          <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Booking ID</div>
+          <div class="booking-code-pill" id="confirmBookingId" style="margin: 0.4rem 0 1.25rem;">LIB-20260928-001</div>
+          
+          <img id="confirmQrImage" src="" alt="Booking QR Code" class="qr-code-img" />
+          
+          <div style="font-size: 0.82rem; color: var(--text-muted);">
+            <i class="fas fa-camera"></i> สแกน QR Code นี้ที่หน้าห้องเพื่อเช็คอินเข้าใช้งาน
+          </div>
+        </div>
+
+        <!-- Details Summary -->
+        <div style="text-align: left; background: #f8fafc; border-radius: 8px; padding: 1rem; font-size: 0.85rem; margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">ห้องที่จอง:</span>
+            <strong id="confirmRoomName">-</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">วันและเวลา:</span>
+            <strong id="confirmDateTime">-</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">ผู้จอง:</span>
+            <strong id="confirmUserName">-</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-muted);">สถานะ:</span>
+            <span class="status-badge available" style="position:static;"><span class="status-dot available"></span>ยืนยันแล้ว</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+          <button class="btn btn-outline btn-sm" id="confirmDownloadQrBtn">
+            <i class="fas fa-download"></i> ดาวน์โหลด QR Code
+          </button>
+          <button class="btn btn-primary btn-sm" id="confirmViewBookingsBtn">
+            <i class="fas fa-list"></i> ดูใน My Bookings
+          </button>
+          <button class="btn btn-secondary btn-sm" data-close-modal>
+            ปิด
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. ADMIN ADD/EDIT ROOM MODAL -->
+  <div class="modal-overlay" id="roomFormModal">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="roomFormModalTitle">เพิ่มห้องสมุดใหม่</h3>
+        <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+      </div>
+      <form id="addRoomForm">
+        <input type="hidden" id="roomFormId" />
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">รหัสห้อง (Room ID)</label>
+              <input type="text" id="roomFormCode" class="form-control" placeholder="เช่น LIB-R105" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">ชื่อห้อง (Room Name)</label>
+              <input type="text" id="roomFormName" class="form-control" placeholder="เช่น Collaborative Space 1" required />
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">ความจุ (ที่นั่ง)</label>
+              <input type="number" id="roomFormCapacity" class="form-control" min="1" max="50" value="6" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">ชั้น (Floor)</label>
+              <input type="number" id="roomFormFloor" class="form-control" min="1" max="10" value="1" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">สถานะเริ่มต้น</label>
+              <select id="roomFormStatus" class="form-control">
+                <option value="available">🟢 Available (ว่าง)</option>
+                <option value="maintenance">⚫ Maintenance (ปรับปรุง)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ที่ตั้ง / โซน</label>
+            <input type="text" id="roomFormLocation" class="form-control" placeholder="เช่น Central Library ชั้น 1 (Zone B)" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ลิงก์รูปภาพห้อง (Image URL)</label>
+            <input type="url" id="roomFormImage" class="form-control" placeholder="https://images.unsplash.com/..." />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">อุปกรณ์และสิ่งอำนวยความสะดวก</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.3rem;">
+              <label class="checkbox-pill"><input type="checkbox" class="room-form-equipment" value="Smart TV 65\""> Smart TV 65"</label>
+              <label class="checkbox-pill"><input type="checkbox" class="room-form-equipment" value="Projector"> โปรเจกเตอร์</label>
+              <label class="checkbox-pill"><input type="checkbox" class="room-form-equipment" value="Whiteboard"> Whiteboard</label>
+              <label class="checkbox-pill"><input type="checkbox" class="room-form-equipment" value="Computer Workstation"> Computer Workstation</label>
+              <label class="checkbox-pill"><input type="checkbox" class="room-form-equipment" value="Video Conference System"> Video Conference System</label>
+              <label class="checkbox-pill"><input type="checkbox" class="room-form-equipment" value="Sound System"> Sound System</label>
+              <label class="checkbox-pill"><input type="checkbox" class="room-form-equipment" value="High-speed Wi-Fi"> High-speed Wi-Fi</label>
+              <label class="checkbox-pill"><input type="checkbox" class="room-form-equipment" value="Power Outlets"> Power Outlets</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">คำอธิบายห้อง</label>
+            <textarea id="roomFormDescription" class="form-control" rows="3" placeholder="ระบุรายละเอียดห้อง เช่น โต๊ะปรับระดับได้ เหมาะสำหรับการอ่านหนังสือหรือทำงานกลุ่ม..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>ยกเลิก</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> บันทึกข้อมูลห้อง</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/student.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

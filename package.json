@@ -1,0 +1,15 @@
+{
+  "name": "library-room-booking-system",
+  "version": "1.0.0",
+  "description": "Modern University Library Room Booking System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "qrcode": "^1.5.4"
+  }
+}
